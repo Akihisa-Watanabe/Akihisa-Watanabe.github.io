@@ -9,13 +9,13 @@ redirect_from:
 ---
 
 # About Me
-I am Akihisa Watanabe, a third-year student at Waseda University, majoring in Mechanical Science and Aerospace Engineering, and minoring in Computer Science. I harbor a strong interest in the domain of character animation, particularly in enhancing motion capabilities. My fascination lies in the potential use of physics-based simulations and deep learning techniques to generate realistic human motion. I aspire to explore models that are capable of learning an array of motion skills, from basic actions like walking, running, jumping, and somersaulting, to advanced movements associated with competitive sports and specialized abilities. The vision I hold for this technology is its potential to enrich creative fields such as 3D computer graphics, and to foster innovation in real-world sports settings, facilitating the exploration of motion-related ideas beyond the limitations of physical constraints.
+I am Akihisa Watanabe, a third-year student at Waseda University, majoring in Mechanical Science and Aerospace Engineering, and minoring in Computer Science. I harbor a strong interest in the domain of character animation, particularly in enhancing motion capabilities. My fascination lies in the potential use of physics-based simulations and deep learning techniques to generate realistic human motion. I aspire to explore models that are capable of learning an array of motion skills, from basic actions like walking, running and jumping, to advanced movements associated with competitive sports and specialized abilities. The vision I hold for this technology is its potential to enrich creative fields such as 3D computer graphics, and to foster innovation in real-world sports settings, facilitating the exploration of motion-related ideas beyond the limitations of physical constraints.
 
 
 # Education
 - **Waseda University** (2021-)
-  - 3rd-year B.A studuent at [Department of Applied Mechanics and Aerospace Engineering](https://www.amech.waseda.ac.jp/)
-  - Minor Majoring Computer Science at [Department of Computer Science and Communications Engineering](https://www.csce.waseda.ac.jp/)
+  - 3rd-year B.A student at [Department of Applied Mechanics and Aerospace Engineering](https://www.amech.waseda.ac.jp/)
+  - Minor: Computer Science at [Department of Computer Science and Communications Engineering](https://www.csce.waseda.ac.jp/)
 
 - **Waseda University Honjo Senior High School** (2019-2021)
 
