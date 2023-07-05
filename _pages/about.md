@@ -28,6 +28,7 @@ I am Akihisa Watanabe, a third-year student at Waseda University, majoring in Me
 
 # Experimence
 - [Adacotech Inc. ](https://adacotech.co.jp/)  ML-engineer (Anomaly Detection), 10/01 2021 - 03/31 2023
+
 Programming : Python(main) • C++ • Swift
 Frameworks : scikit-learn • OpenCV • PyTorch• PyTorch Metric Learning
 Language : Japanese(native), English
