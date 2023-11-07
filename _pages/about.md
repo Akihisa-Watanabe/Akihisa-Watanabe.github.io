@@ -9,10 +9,16 @@ redirect_from:
 ---
 
 # About Me
-I am Akihisa Watanabe, a third-year student at Waseda University, majoring in Mechanical Science and Aerospace Engineering, and minoring in Computer Science. I harbor a strong interest in the domain of character animation, particularly in enhancing motion capabilities. My fascination lies in the potential use of physics-based simulations and deep learning techniques to generate realistic human motion. I aspire to explore models that are capable of learning an array of motion skills, from basic actions like walking, running and jumping, to advanced movements associated with competitive sports and specialized abilities. The vision I hold for this technology is its potential to enrich creative fields such as 3D computer graphics, and to foster innovation in real-world sports settings, facilitating the exploration of motion-related ideas beyond the limitations of physical constraints.
+I am Akihisa Watanabe, a 3rd-year undergraduate student in Simo-Serra Lab. of Waseda University, advised by Prof. [Edger Simo-Serra](https://esslab.jp/~ess/en/). My research intereset is in  3D human motion generation, focused on generatin a wide range of movements, from daily activities to complex, sport-specific and specialized movements. My vision is to leverage this technology to devise new techniques for fields such as sports, facilitating new ways of learning and advancing while reducing the risks associated with physical practice.
+
+# News
+ 
+
+- **Oct.2023**: [Open-Domain Dialogue Quality Evaluation: Deriving Nugget-level Scores from Turn-level Scores](https://doi.org/10.48550/arXiv.2310.00410) accepted to [SIGIR Asia 2023](http://www.sigir-ap.org/sigir-ap-2023/).
 
 
-# Education
+
+<!-- # Education
 - **Waseda University** (2021-)
   - 3rd-year B.A student at [Department of Applied Mechanics and Aerospace Engineering](https://www.amech.waseda.ac.jp/)
   - Minor: Computer Science at [Department of Computer Science and Communications Engineering](https://www.csce.waseda.ac.jp/)
@@ -37,4 +43,4 @@ Language : Japanese(native), English
 1. 2019 "Relay Master", Super Creator of the Mito Junior program. [https://jr.mitou.org/projects/2019/relay_master](https://jr.mitou.org/projects/2019/relay_master)
 2. Finalist at the 3rd IPSJ Junior High School and High School Information Science Research Contest. [https://sites.google.com/view/83taikaiposter/%E5%8F%97%E8%B3%9E%E8%80%85#h.hdvf1p1x2097](https://sites.google.com/view/83taikaiposter/%E5%8F%97%E8%B3%9E%E8%80%85#h.hdvf1p1x2097)
 
-※Both are available in Japanese only
+※Both are available in Japanese only -->
