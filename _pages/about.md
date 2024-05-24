@@ -9,7 +9,7 @@ redirect_from:
 ---
 
 # About Me
-I am Akihisa Watanabe, a 3rd-year undergraduate student in Simo-Serra Lab. of Waseda University, advised by Prof. [Edgar Simo-Serra](https://esslab.jp/~ess/en/). My research intereset is in  3D human motion generation, focused on generatin a wide range of movements, from daily activities to complex, sport-specific and specialized movements. My vision is to leverage this technology to devise new techniques for fields such as sports, facilitating new ways of learning and advancing while reducing the risks associated with physical practice.
+I am Akihisa Watanabe, a 4th-year undergraduate student in Simo-Serra Lab. of Waseda University, advised by Prof. [Edgar Simo-Serra](https://esslab.jp/~ess/en/). My research intereset is in  3D human motion generation, focused on generatin a wide range of movements, from daily activities to complex, sport-specific and specialized movements. My vision is to leverage this technology to devise new techniques for fields such as sports, facilitating new ways of learning and advancing while reducing the risks associated with physical practice.
 
 # News
  

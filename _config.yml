@@ -10,7 +10,7 @@ locale                   : "en-US"
 title                    : "Akihisa Watanabe"
 title_separator          : "-"
 name                     : &name "Akihisa Watanabe"
-description              : &description "3rd year B.A student at Waseda University"
+description              : &description "4th-year undergraduate student at Waseda University"
 url                      : https://akihisa-watanabe.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "Akihisa-Watanabe.github.io"
@@ -82,7 +82,7 @@ analytics:
 author:
   name             : "Akihisa Watanabe"
   avatar           : "profile.png"
-  bio              : "3rd year B.A. student at Waseda University"
+  bio              : "4th-year undergraduate student at Waseda University"
   location         : "Shinjuku, Tokyo, Japan"
   employer         :
   pubmed           : # "https://www.ncbi.nlm.nih.gov/pubmed/?term=john+snow"
