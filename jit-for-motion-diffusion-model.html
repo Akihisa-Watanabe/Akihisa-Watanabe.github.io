@@ -44,7 +44,7 @@
                   In human motion generation you can already see all three prediction targets in use. MotionDiffuse <a href="#ref-2">[2]</a> sticks to the classic DDPM setup and predicts the added noise $\boldsymbol{\epsilon}$ directly in pose space during denoising. Latent-space methods such as Motion Latent Diffusion (MLD) <a href="#ref-3">[3]</a> follow the same idea but run diffusion in a compressed VAE latent and still learn to predict $\boldsymbol{\epsilon}$ there. Human Motion Diffusion Model (MDM) <a href="#ref-4">[4]</a>, in contrast, predicts the clean motion $\mathbf{x}$ at every step, which makes it easy to attach geometric losses on joint positions and velocities. ACMDM <a href="#ref-5">[5]</a> then adopts a flow-matching view and trains the network to output a continuous velocity field $\mathbf{v}$ that transports Gaussian motion to clean trajectories.
                 </p>
                 <p>
-                  In this post, <strong>we</strong> take that ACMDM setup and push it back toward the JiT regime: the model predicts clean motion, the training loss is still on velocity, and the flow field is recovered analytically. The rest of the story is about how to make this work in practice and what changes, if anything, when you bring JiT's "just predict $\mathbf{x}$" philosophy into a modern motion diffusion model.
+                  In this post, we take that ACMDM setup and push it back toward the JiT regime: the model predicts clean motion, the training loss is still on velocity, and the flow field is recovered analytically. The rest of the story is about how to make this work in practice and what changes, if anything, when you bring JiT's "just predict $\mathbf{x}$" philosophy into a modern motion diffusion model.
                 </p>
                 <h2>JiT&rsquo;s objective: predict $x$, train in $v$-space</h2>
                 <p>
@@ -76,7 +76,7 @@
                 </p>
                 <h2>Making the JiT loss work in practice</h2>
                 <p>
-                  To make this objective behave in a real training codebase, <strong>we</strong> only follow two small tricks from JiT <a href="#ref-1">[1]</a>.
+                  To make this objective behave in a real training codebase, we only follow two small tricks from JiT <a href="#ref-1">[1]</a>.
                 </p>
                 <p>
                   <strong>Trick 1 (clip $(1 - t)$).</strong><br>
@@ -86,7 +86,7 @@
                   $$1 - t \mapsto \max(1 - t,\, \tau)$$
                 </p>
                 <p>
-                  everywhere it appears inside $1/(1-t)$, with a fixed $\tau = 0.05$. <strong>We</strong> apply exactly the same clipping in <strong>our</strong> motion version so that the loss scale stays reasonable.
+                  everywhere it appears inside $1/(1-t)$, with a fixed $\tau = 0.05$. We apply exactly the same clipping in our motion version so that the loss scale stays reasonable.
                 </p>
                 <p>
                   <strong>Trick 2 (change the time sampling).</strong><br>
@@ -96,7 +96,7 @@
                   $$\operatorname{logit}(t) \sim \mathcal{N}(\mu,\sigma^2),$$
                 </p>
                 <p>
-                  with $\mu = -0.8$ and $\sigma = 0.8$ on ImageNet. This shifts most training points toward moderately noisy states where $1-t$ is not tiny. <strong>We</strong> reuse the same $(\mu,\sigma)$ for motion, so between clipping and this time schedule the JiT loss stays numerically well-behaved without further modifications.
+                  with $\mu = -0.8$ and $\sigma = 0.8$ on ImageNet. This shifts most training points toward moderately noisy states where $1-t$ is not tiny. We reuse the same $(\mu,\sigma)$ for motion, so between clipping and this time schedule the JiT loss stays numerically well-behaved without further modifications.
                 </p>
                 <h2>Results: clipping at sampling hurts motion quality</h2>
                 <figure style="margin:20px auto;width:100%;max-width:800px;">
@@ -134,7 +134,7 @@
                   The last two evaluations happen at $t \approx 0.96$ and $t \approx 0.98$, so the smallest noise level the model ever sees at sampling time is $1 - t \approx 0.02$.
                 </p>
                 <p>
-                  If <strong>we</strong> take JiT's recipe literally and plug it into ACMDM, <strong>we</strong> get the configuration labelled ACMDM-JiT (Clip Train & Sample): predict $\mathbf{x}$, train with a velocity loss, and apply the same clipping $(1 - t) \mapsto \max(1 - t, 0.05)$ in both training and sampling. This row in Table 1 fails badly, with a very large FID and much lower R-Precision than the original velocity baseline. The time grid above makes the failure easy to see. For the last two evaluation points $\textbf{0.96, 0.98}$ we have
+                  If we take JiT's recipe literally and plug it into ACMDM, we get the configuration labelled ACMDM-JiT (Clip Train & Sample): predict $\mathbf{x}$, train with a velocity loss, and apply the same clipping $(1 - t) \mapsto \max(1 - t, 0.05)$ in both training and sampling. This row in Table 1 fails badly, with a very large FID and much lower R-Precision than the original velocity baseline. The time grid above makes the failure easy to see. For the last two evaluation points $\textbf{0.96, 0.98}$ we have
                 </p>
                 <p>
                   \[
