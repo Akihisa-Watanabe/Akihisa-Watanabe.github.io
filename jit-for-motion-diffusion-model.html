@@ -1,0 +1,215 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>JiT for Motion Diffusion Models | Blog</title>
+
+    <meta name="author" content="Akihisa Watanabe">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="images/favicon/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+    <script>
+      window.MathJax = {
+        tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+        options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+      };
+    </script>
+    <script async id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  </head>
+
+  <body>
+    <table style="width:100%;max-width:800px;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+      <tr style="padding:0px">
+        <td style="padding:0px">
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr style="padding:0px">
+              <td style="padding:2.5%;width:100%;vertical-align:middle">
+                <p class="name" style="text-align:center;">JiT for Motion Diffusion Models</p>
+                <p style="text-align:center;">
+                  <span style="font-size:110%;">Akihisa Watanabe</span><br>
+                  <span style="font-size:90%;">December 1, 2025</span>
+                </p>
+                <p style="margin-top:12px;"><strong>TL;DR.</strong> JiT-style clean sample prediction with velocity loss works well for text-to-motion generation, but clipping during sampling ruins the final denoising steps. We find that this degrades FID and leads to unnatural vibrations in the generated motion. Keep the training stabilized with clipping, but let the sampler run unclipped to eliminate high-frequency noise.</p>
+              </td>
+            </tr>
+          </tbody></table>
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  The JiT paper <a href="#ref-1">[1]</a> argues that diffusion and flow models should go back to predicting clean data instead of noise or velocity, while keeping the loss defined on the velocity.
+                </p>
+                <p>
+                  In human motion generation you can already see all three prediction targets in use. MotionDiffuse <a href="#ref-2">[2]</a> sticks to the classic DDPM setup and predicts the added noise $\boldsymbol{\epsilon}$ directly in pose space during denoising. Latent-space methods such as Motion Latent Diffusion (MLD) <a href="#ref-3">[3]</a> follow the same idea but run diffusion in a compressed VAE latent and still learn to predict $\boldsymbol{\epsilon}$ there. Human Motion Diffusion Model (MDM) <a href="#ref-4">[4]</a>, in contrast, predicts the clean motion $\mathbf{x}$ at every step, which makes it easy to attach geometric losses on joint positions and velocities. ACMDM <a href="#ref-5">[5]</a> then adopts a flow-matching view and trains the network to output a continuous velocity field $\mathbf{v}$ that transports Gaussian motion to clean trajectories.
+                </p>
+                <p>
+                  In this post, <strong>we</strong> take that ACMDM setup and push it back toward the JiT regime: the model predicts clean motion, the training loss is still on velocity, and the flow field is recovered analytically. The rest of the story is about how to make this work in practice and what changes, if anything, when you bring JiT's "just predict $\mathbf{x}$" philosophy into a modern motion diffusion model.
+                </p>
+                <h2>JiT&rsquo;s objective: predict $x$, train in $v$-space</h2>
+                <p>
+                  At the heart of JiT <a href="#ref-1">[1]</a> is a very simple loss. The model lives in a continuous-time diffusion (or flow-matching) setup where a noisy sample $\mathbf{z}_t$ is obtained by interpolating between clean data $\mathbf{x}$ and Gaussian noise $\boldsymbol{\epsilon}$:
+                </p>
+                <p>
+                  $$\mathbf{z}_t = t\,\mathbf{x} + (1 - t)\,\boldsymbol{\epsilon}, \qquad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \mathbf{I}), \quad t \in [0, 1].$$
+                </p>
+                <p>
+                  The corresponding flow velocity is just the time derivative of this path:
+                </p>
+                <p>
+                  $$\mathbf{v} = \frac{d\mathbf{z}_t}{dt} = \mathbf{x} - \boldsymbol{\epsilon}.$$
+                </p>
+                <p>
+                  JiT insists that the network should directly <strong>predict a clean sample</strong> $\mathbf{x}_\theta(\mathbf{z}_t, t)$, but the <strong>loss is defined on the velocity</strong>. The training objective is
+                </p>
+                <p>
+                  $$\mathcal{L}_{\text{JiT}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}} \left\| \mathbf{v}_\theta(\mathbf{z}_t, t) - \mathbf{v} \right\|^2,$$
+                </p>
+                <p>
+                  where the predicted velocity $\mathbf{v}_\theta$ is not a separate head, but is reconstructed from the $\mathbf{x}$ prediction as
+                </p>
+                <p>
+                  $$\mathbf{v}_\theta(\mathbf{z}_t, t) = \frac{\mathbf{x}_\theta(\mathbf{z}_t, t) - \mathbf{z}_t}{1 - t}.$$
+                </p>
+                <p>
+                  This is exactly the &ldquo;$x$-pred + $v$-loss&rdquo; configuration used in JiT: the network always outputs a clean sample, and the flow field used for training and sampling is obtained analytically from that prediction.
+                </p>
+                <h2>Making the JiT loss work in practice</h2>
+                <p>
+                  To make this objective behave in a real training codebase, <strong>we</strong> only follow two small tricks from JiT <a href="#ref-1">[1]</a>.
+                </p>
+                <p>
+                  <strong>Trick 1 (clip $(1 - t)$).</strong><br>
+                  In the JiT formulation, both the loss and the reconstruction of $\mathbf{v}_\theta$ contain explicit divisions by $(1 - t)$. As $t \to 1$, the factor $1/(1-t) \to \infty$, and a few near-terminal samples can dominate the loss. JiT simply clips the denominator in implementation, replacing
+                </p>
+                <p>
+                  $$1 - t \mapsto \max(1 - t,\, \tau)$$
+                </p>
+                <p>
+                  everywhere it appears inside $1/(1-t)$, with a fixed $\tau = 0.05$. <strong>We</strong> apply exactly the same clipping in <strong>our</strong> motion version so that the loss scale stays reasonable.
+                </p>
+                <p>
+                  <strong>Trick 2 (change the time sampling).</strong><br>
+                  JiT also avoids drawing $t$ too close to 1 in the first place. Instead of sampling $t \sim \mathcal{U}[0,1]$, it uses a logit–normal schedule
+                </p>
+                <p>
+                  $$\operatorname{logit}(t) \sim \mathcal{N}(\mu,\sigma^2),$$
+                </p>
+                <p>
+                  with $\mu = -0.8$ and $\sigma = 0.8$ on ImageNet. This shifts most training points toward moderately noisy states where $1-t$ is not tiny. <strong>We</strong> reuse the same $(\mu,\sigma)$ for motion, so between clipping and this time schedule the JiT loss stays numerically well-behaved without further modifications.
+                </p>
+                <h2>Results: clipping at sampling hurts motion quality</h2>
+                <figure style="margin:20px auto;width:100%;max-width:800px;">
+                  <img src="files/blog/Table1.png" alt="Table 1: Effect of prediction / loss parameterization" style="width:100%;height:auto;display:block;">
+                  <figcaption style="color:gray;font-size:small;margin-top:8px;text-align:left;">
+                    Table 1. Text-conditioned motion generation with ACMDM on HumanML3D under different prediction targets and clipping schemes. Clipping $(1 - t)$ at sampling severely degrades quality, while JiT-style x-prediction with v-loss and clipping only during training slightly improves over the original velocity baseline.
+                  </figcaption>
+                </figure>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px auto 24px;max-width:960px;">
+                  <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+                    <video src="files/blog/walk_ACMDM_velocity_baseline.mp4" controls autoplay loop muted playsinline style="width:100%;height:auto;display:block;"></video>
+                    <p style="color:gray;font-size:12px;margin:0;text-align:center;">ACMDM (Baseline)</p>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+                    <video src="files/blog/walk_ACMDM_JiT_clipped.mp4" controls autoplay loop muted playsinline style="width:100%;height:auto;display:block;"></video>
+                    <p style="color:gray;font-size:12px;margin:0;text-align:center;">ACMDM-JiT (Clip Train &amp; Sample)</p>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+                    <video src="files/blog/walk_ACMDM_JiT_clip_only_train.mp4" controls autoplay loop muted playsinline style="width:100%;height:auto;display:block;"></video>
+                    <p style="color:gray;font-size:12px;margin:0;text-align:center;">ACMDM-JiT (Clip Train Only)</p>
+                  </div>
+                </div>
+                <p>
+                  Let us now look at what all of this does to actual motion quality on HumanML3D. Table 1 compares several variants of ACMDM that only differ in how they parameterize the flow and how they treat clipping during training and sampling. All models use the same deterministic sampler: a 50-step ODE solver that runs Heun's method for every step except the very last one, which is a single Euler step. With this setup, the network is queried on a fixed uniform grid
+                </p>
+                <p>
+                  \[
+                  \begin{aligned}
+                  t = 0.00, 0.02, 0.04, \dots, 0.88, 0.90, 0.92, 0.94,\,
+                  \textbf{0.96, 0.98}
+                  \end{aligned}
+                  \]
+                </p>
+                <p>
+                  The last two evaluations happen at $t \approx 0.96$ and $t \approx 0.98$, so the smallest noise level the model ever sees at sampling time is $1 - t \approx 0.02$.
+                </p>
+                <p>
+                  If <strong>we</strong> take JiT's recipe literally and plug it into ACMDM, <strong>we</strong> get the configuration labelled ACMDM-JiT (Clip Train & Sample): predict $\mathbf{x}$, train with a velocity loss, and apply the same clipping $(1 - t) \mapsto \max(1 - t, 0.05)$ in both training and sampling. This row in Table 1 fails badly, with a very large FID and much lower R-Precision than the original velocity baseline. The time grid above makes the failure easy to see. For the last two evaluation points $\textbf{0.96, 0.98}$ we have
+                </p>
+                <p>
+                  \[
+                  1 - t =
+                  \begin{cases}
+                    0.04 \mapsto 0.05, & t = 0.96,\\[2pt]
+                    0.02 \mapsto 0.05, & t = 0.98,
+                  \end{cases}
+                  \]
+                </p>
+                <p>
+                  so both steps are forced to use the same effective noise scale $1 - t = 0.05$ even though the true values should be $0.04$ and $0.02$. Because the sampler converts $\mathbf{x}_\theta$ to a velocity via $\mathbf{v}_\theta = (\mathbf{x}_\theta - \mathbf{z}_t)/(1 - t)$, this <strong>clipping shrinks the last two velocities</strong> by factors $0.04/0.05$ and $0.02/0.05$. The final updates are therefore too weak, the denoising process stops early, and <strong>a small amount of high-frequency noise is left in the motion</strong>. In motion space, this residual noise shows up as <strong>visible jitter across the whole body, creating unnatural vibrations throughout the sequence</strong>, even when the overall trajectory still roughly matches the text prompt.
+                </p>
+                <p>
+                  The simplest fix is to <strong>stop clipping during sampling</strong> but keep JiT-style clipping during training. This is the setting marked ACMDM-JiT (Clip Train Only) in Table&nbsp;1: it still applies $(1 - t) \mapsto \max(1 - t, 0.05)$ inside the loss, but it always uses the true value of $1 - t$ when converting $\mathbf{x}_\theta$ into a velocity at sampling time. In this configuration, even at $t = 0.98$ the factor $1/(1 - t)$ is only $50$, so the <strong>division stays numerically stable</strong> and there is no need for a hard floor during inference. With this change, the <strong>model finally gets to use the very last low-noise steps at test time</strong>. Quantitatively, FID drops from a catastrophic value to a number that is slightly better than the original velocity baseline, and the R-Precision scores recover. Qualitatively, the visible jitter is largely gone: <strong>the whole body moves smoothly</strong>.
+                </p>
+                <h2>Wrapping up: If you want to try this</h2>
+                <p>
+                  This post provides a starting point for testing the JiT idea on models beyond images. We confirmed that the recipe transfers well to motion generation, provided we avoid clipping during sampling. Although our experiments used a relatively small backbone, we expect the benefits to extend to larger models and other motion diffusion architectures. We look forward to seeing further explorations in these directions!
+                </p>
+                <p>
+                  If you'd like to try this setup yourself, check out our
+                  <a href="https://github.com/Akihisa-Watanabe/ACMDM-JiT">code on GitHub</a>!
+                  Feel free to reach out via email, Twitter, or GitHub if you have any questions, comments, or feedback.
+                </p>
+                <hr>
+                <h2>References</h2>
+                  <ol>
+                    <li id="ref-1">
+                      Tianhong Li and Kaiming He.
+                      <em>Back to Basics: Let Denoising Generative Models Denoise.</em>
+                      arXiv preprint arXiv:2511.13720, 2025.
+                      <a href="https://arxiv.org/abs/2511.13720">arXiv</a>
+                    </li>
+                    <li id="ref-2">
+                      Mingyuan Zhang, Zhongang Cai, Liang Pan, Fangzhou Hong, Xinying Guo, Lei Yang, and Ziwei Liu.
+                      <em>MotionDiffuse: Text-Driven Human Motion Generation With Diffusion Model.</em>
+                      IEEE Transactions on Pattern Analysis and Machine Intelligence (TPAMI), 46(6): 4115–4128, 2024.
+                      <a href="https://doi.org/10.1109/TPAMI.2024.3355414">TPAMI</a>
+                    </li>
+                    <li id="ref-3">
+                      Xin Chen, Biao Jiang, Wen Liu, Zilong Huang, Bin Fu, Tao Chen, Jingyi Yu, and Gang Yu.
+                      <em>Executing Your Commands via Motion Diffusion in Latent Space.</em>
+                      In CVPR, 2023.
+                      <a href="https://openaccess.thecvf.com/content/CVPR2023/html/Chen_Executing_Your_Commands_via_Motion_Diffusion_in_Latent_Space_CVPR_2023_paper.html">CVPR OpenAccess</a>
+                    </li>
+                    <li id="ref-4">
+                      Guy Tevet, Sigal Raab, Brian Gordon, Yonatan Shafir, Daniel Cohen-Or, and Amit H. Bermano.
+                      <em>Human Motion Diffusion Model.</em>
+                      In ICLR, 2023.
+                      <a href="https://openreview.net/forum?id=SJ1kSyO2jwu">OpenReview</a>
+                    </li>
+                    <li id="ref-5">
+                      Zichong Meng, Zeyu Han, Xiaogang Peng, Yiming Xie, and Huaizu Jiang.
+                      <em>Absolute Coordinates Make Motion Generation Easy.</em>
+                      arXiv preprint arXiv:2505.19377, 2025.
+                      <a href="https://arxiv.org/abs/2505.19377">arXiv</a>
+                    </li>
+                  </ol>
+
+              </td>
+            </tr>
+          </tbody></table>
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px">
+                <br>
+                <p style="text-align:right;font-size:small;">
+                  <a href="index.html">Back to home</a>
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
