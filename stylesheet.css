@@ -109,34 +109,69 @@ h2 {
   font-size: 32px;
 }
 
-.one {
-  width: 160px;
-  height: 160px;
-  position: relative;
-}
-
-.two {
-  width: 160px;
-  height: 160px;
-  position: absolute;
-  transition: opacity .2s ease-in-out;
-  -moz-transition: opacity .2s ease-in-out;
-  -webkit-transition: opacity .2s ease-in-out;
-}
-
-.fade {
-  transition: opacity .2s ease-in-out;
-  -moz-transition: opacity .2s ease-in-out;
-  -webkit-transition: opacity .2s ease-in-out;
-}
-
 span.highlight {
   background-color: #ffffd0;
 }
 
-.colored-box {
-    color: black;
-    padding: 20px;
-    display: inline-block;
-    border-radius: 10px;
+/* Stack the bio text and profile photo on narrow screens */
+@media (max-width: 600px) {
+  .profile-row,
+  .bio-cell,
+  .photo-cell {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .photo-cell {
+    text-align: center;
+  }
+
+  .photo-cell img {
+    width: 55% !important;
+    max-width: 220px !important;
+  }
+
+  .name {
+    font-size: 28px;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #161616;
+  }
+
+  body,
+  td,
+  th,
+  tr,
+  p,
+  a,
+  strong,
+  h2,
+  li,
+  .name,
+  .papertitle {
+    color: #e6e6e6;
+  }
+
+  a {
+    color: #4ea1f7;
+  }
+
+  a:focus,
+  a:hover {
+    color: #f0a050;
+  }
+
+  span.highlight {
+    background-color: #4a4a28;
+  }
+
+  hr {
+    border-color: #333;
+  }
 }

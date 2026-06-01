@@ -6,8 +6,25 @@
     <title>JiT for Motion Diffusion Models | Blog</title>
 
     <meta name="author" content="Akihisa Watanabe">
+    <meta name="description" content="JiT-style clean-sample prediction with velocity loss transfers well to text-to-motion generation, but clipping during sampling ruins the final denoising steps and introduces jitter. A blog post by Akihisa Watanabe.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="canonical" href="https://akihisa-watanabe.github.io/jit-for-motion-diffusion-model.html">
+
+    <!-- Open Graph / social preview -->
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="JiT for Motion Diffusion Models">
+    <meta property="og:description" content="JiT-style clean-sample prediction with velocity loss transfers well to text-to-motion generation, but clipping during sampling ruins the final denoising steps and introduces jitter.">
+    <meta property="og:url" content="https://akihisa-watanabe.github.io/jit-for-motion-diffusion-model.html">
+    <meta property="og:image" content="https://akihisa-watanabe.github.io/images/profile.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="JiT for Motion Diffusion Models">
+    <meta name="twitter:description" content="JiT-style clean-sample prediction with velocity loss transfers well to text-to-motion generation, but clipping during sampling ruins the final denoising steps and introduces jitter.">
+    <meta name="twitter:image" content="https://akihisa-watanabe.github.io/images/profile.png">
+
     <link rel="shortcut icon" href="images/favicon/favicon.ico" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/favicon/apple-touch-icon.png">
     <link rel="stylesheet" type="text/css" href="stylesheet.css">
     <script>
       window.MathJax = {
@@ -158,7 +175,7 @@
                 <p>
                   If you'd like to try this setup yourself, check out our
                   <a href="https://github.com/Akihisa-Watanabe/ACMDM-JiT">code on GitHub</a>!
-                  Feel free to reach out via email, Twitter, or GitHub if you have any questions, comments, or feedback.
+                  Feel free to reach out via <a href="mailto:akihisa@ruri.waseda.jp">email</a>, <a href="https://twitter.com/Akihisa_Wat">Twitter</a>, or <a href="https://github.com/Akihisa-Watanabe">GitHub</a> if you have any questions, comments, or feedback.
                 </p>
                 <hr>
                 <h2>References</h2>
